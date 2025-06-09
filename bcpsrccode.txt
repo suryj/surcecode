@@ -1,0 +1,98 @@
+Source code:
+
+# Import Libraries
+
+import pandas as pd
+import numpy as np
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.svm import SVC
+from sklearn.naive_bayes import GaussianNB
+from sklearn.metrics import accuracy_score, precision_score, f1_score, confusion_matrix
+import matplotlib.pyplot as plt
+import seaborn as sns
+import joblib
+from sklearn.datasets import load_breast_cancer
+
+# Load Data
+
+data = load_breast_cancer()
+df = pd.DataFrame(data.data, columns=data.feature_names)
+df['target'] = data.target
+
+# Data Preprocessing
+
+X = df.drop(columns=['target'])
+y = df['target']
+scaler = StandardScaler()
+X = scaler.fit_transform(X)
+
+# Split Data
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Define Classifiers
+
+classifiers = {
+    "K-Nearest Neighbors": KNeighborsClassifier(),
+    "Decision Tree": DecisionTreeClassifier(random_state=42),
+    "Random Forest": RandomForestClassifier(random_state=42),
+    "Support Vector Machine": SVC(random_state=42),
+    "Naive Bayes": GaussianNB()
+}
+
+
+
+
+# Train and Evaluate Models
+
+accuracy_results_train = {}
+accuracy_results_test = {}
+precision_results_test = {}
+f1_results_test = {}
+
+for name, model in classifiers.items():
+    model.fit(X_train, y_train)
+    train_predictions = model.predict(X_train)
+    test_predictions = model.predict(X_test)
+
+    accuracy_results_train[name] = accuracy_score(y_train, train_predictions)
+    accuracy_results_test[name] = accuracy_score(y_test, test_predictions)
+    precision_results_test[name] = precision_score(y_test, test_predictions)
+    f1_results_test[name] = f1_score(y_test, test_predictions)
+
+    cm = confusion_matrix(y_test, test_predictions)
+
+    print(f"{name}:\n"
+          f"  Train Accuracy: {accuracy_results_train[name]:.2f}\n"
+          f"  Test Accuracy: {accuracy_results_test[name]:.2f}\n"
+          f"  Precision: {precision_results_test[name]:.2f}\n"
+          f"  F1 Score: {f1_results_test[name]:.2f}\n"
+          f"  Confusion Matrix:\n{cm}\n")
+
+# Select Best Model
+
+best_model_name = max(f1_results_test, key=f1_results_test.get)
+best_model = classifiers[best_model_name]
+best_predictions = best_model.predict(X_test)
+best_cm = confusion_matrix(y_test, best_predictions)
+
+print(f"\nBest Model: {best_model_name}")
+print(f"  Test Accuracy: {accuracy_results_test[best_model_name]:.2f}")
+print(f"  Precision: {precision_results_test[best_model_name]:.2f}")
+print(f"  F1 Score: {f1_results_test[best_model_name]:.2f}")
+print(f"  Confusion Matrix:\n{best_cm}")
+
+# Save the Model
+
+model_data = {
+    'scaler': scaler,
+    'model': best_model
+}
+joblib.dump(model_data, 'svm_breast_cancer_model.pkl')
+print("✅ SVM model and scaler saved as 'svm_breast_cancer_model.pkl'")
+
+
